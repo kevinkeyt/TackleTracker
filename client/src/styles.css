@@ -275,3 +275,22 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   background: var(--text); color: var(--bg); font-weight: 600; font-size: 15px; text-align: center;
 }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Scan modes and session log */
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; margin-bottom: 10px; background: var(--surface-2); border-radius: 12px; }
+.segmented button { min-height: 38px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 600; font-size: 14px; cursor: pointer; }
+.segmented button.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); }
+.segmented button.on.add { background: var(--accent); color: var(--accent-ink); }
+.segmented button.on.remove { background: var(--warn); color: var(--bg); }
+.scan-log { margin-top: 16px; }
+.scan-log-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.scan-log h2 { font-size: 17px; }
+.scan-log ul { list-style: none; margin: 0; padding: 0; }
+.scan-log li { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.scan-log .thumb.sm { width: 44px; height: 44px; }
+.delta { font-weight: 700; }
+.delta.out { color: var(--warn); }
+.delta.in { color: var(--accent); }
+.take-out { margin-top: 4px; }
+.verdict.none { background: var(--warn-soft); color: var(--warn); }
+.verdict.none span { color: var(--muted); font-size: 14px; }

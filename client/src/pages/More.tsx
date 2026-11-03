@@ -65,7 +65,7 @@ export default function More() {
         <ul className="tips">
           <li>Open the <strong>https://</strong> address shown when the server starts. Your phone will warn that the certificate isn't trusted — that's expected for a home server; continue to the site.</li>
           <li>Safari: tap Share → <strong>Add to Home Screen</strong> so it opens like an app.</li>
-          <li>Use <strong>Count mode</strong> on the Scan tab to tally packages quickly: each scan adds one.</li>
+          <li>On the Scan tab, <strong>Add +1</strong> tallies packages as you shelve them and <strong>Take out −1</strong> pulls them from inventory as they go in the boat. Undo fixes a mis-scan.</li>
         </ul>
       </section>
     </div>

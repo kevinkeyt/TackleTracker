@@ -3,7 +3,7 @@
 Keep track of your soft plastics, hard baits, terminal tackle, line, rods and reels from your phone in the tackle room.
 
 - **Scan a barcode** to see if you already own it (and how many), or add it if you don't. Works in the store too, so you don't buy what you already have.
-- **Count mode** adds one to the count for each package you scan, for quick restocking.
+- **Scan modes**: *Add +1* counts packages as you shelve them; *Take out −1* removes one per scan when you load the boat or use something up. Each scan can be undone.
 - **Fill in from Tackle Warehouse**: paste a product link, tap your color, and the name, brand, photo, price, SKU and UPC are filled in for you. Photos are saved on your computer.
 - **Reorder list**: set a "reorder at" level per item. Anything at or below it (or added to the list by hand) shows up with a **Shop** button that goes back to Tackle Warehouse.
 - Backups as JSON or CSV from the **More** tab.

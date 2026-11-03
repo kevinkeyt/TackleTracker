@@ -24,7 +24,10 @@ function codeFrom(result: Result) {
 
 const liveCameraAvailable = () => window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
 
-export default function Scanner({ onDetected, paused = false }: { onDetected: (code: string) => void; paused?: boolean }) {
+export default function Scanner({ onDetected, paused = false }: {
+  onDetected: (code: string, source: 'camera' | 'manual') => void;
+  paused?: boolean;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
   const onDetectedRef = useRef(onDetected);
@@ -46,7 +49,7 @@ export default function Scanner({ onDetected, paused = false }: { onDetected: (c
         (result) => {
           if (result && !cancelled) {
             navigator.vibrate?.(60);
-            onDetectedRef.current(codeFrom(result));
+            onDetectedRef.current(codeFrom(result), 'camera');
           }
         },
       )
@@ -77,7 +80,7 @@ export default function Scanner({ onDetected, paused = false }: { onDetected: (c
     const url = URL.createObjectURL(file);
     try {
       const result = await new BrowserMultiFormatReader(hints).decodeFromImageUrl(url);
-      onDetected(codeFrom(result));
+      onDetected(codeFrom(result), 'manual');
     } catch {
       alert('No barcode found in that photo. Try again closer, with the barcode flat and in focus.');
     } finally {
@@ -90,7 +93,7 @@ export default function Scanner({ onDetected, paused = false }: { onDetected: (c
     e.preventDefault();
     const digits = manual.replace(/\D/g, '');
     if (digits.length >= 6) {
-      onDetected(digits.length === 8 ? expandUpcE(digits) : digits);
+      onDetected(digits.length === 8 ? expandUpcE(digits) : digits, 'manual');
       setManual('');
     }
   }
