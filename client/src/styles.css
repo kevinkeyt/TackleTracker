@@ -294,3 +294,6 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .take-out { margin-top: 4px; }
 .verdict.none { background: var(--warn-soft); color: var(--warn); }
 .verdict.none span { color: var(--muted); font-size: 14px; }
+.backup-nudge { margin-bottom: 12px; }
+.backup-nudge span { color: var(--text); }
+code { font-size: 0.9em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }

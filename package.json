@@ -2,14 +2,12 @@
   "name": "tackletracker",
   "private": true,
   "version": "0.1.0",
-  "description": "Track baits, tackle, rods and reels; scan barcodes; reorder from Tackle Warehouse.",
+  "description": "Phone app for tracking baits, tackle, rods and reels; scan barcodes; reorder from Tackle Warehouse. All data stays on the phone.",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
-    "dev:server": "node --watch --disable-warning=ExperimentalWarning server/index.js",
-    "dev:client": "vite --config client/vite.config.ts",
+    "dev": "vite --config client/vite.config.ts",
     "build": "vite build --config client/vite.config.ts",
-    "start": "npm run build && node --disable-warning=ExperimentalWarning server/index.js",
+    "preview": "vite preview --config client/vite.config.ts",
     "typecheck": "tsc -p client --noEmit"
   },
   "engines": {
@@ -18,20 +16,16 @@
   "dependencies": {
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
-    "cheerio": "^1.0.0",
-    "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1",
+    "idb": "^8.0.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "selfsigned": "^2.4.1"
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-basic-ssl": "^1.1.0",
     "@vitejs/plugin-react": "^4.3.4",
-    "concurrently": "^9.1.0",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }

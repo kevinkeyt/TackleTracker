@@ -1,11 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "tackletracker",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["start"],
-      "port": 3000
-    }
+    { "name": "tackletracker", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 5173, "url": "https://localhost:5173" },
+    { "name": "tt-preview", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "preview", "--config", "client/vite.config.ts", "--port", "4173", "--strictPort"], "port": 4173, "url": "http://localhost:4173" }
   ]
 }

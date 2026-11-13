@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api, CATEGORIES, categoryLabel, describe, isLow, type Item } from '../api';
+import { BACKUP_REMIND_DAYS, daysSinceBackup } from '../backup';
 import { Icon, Stepper, Thumb } from '../components/ui';
 
 export default function Inventory() {
@@ -44,6 +45,8 @@ export default function Inventory() {
     return c;
   }, [matching]);
   const lowCount = (items ?? []).filter((it) => isLow(it) || it.on_list).length;
+  const backupDays = daysSinceBackup();
+  const needsBackup = (items?.length ?? 0) >= 5 && (backupDays == null || backupDays >= BACKUP_REMIND_DAYS);
 
   async function adjust(item: Item, delta: number) {
     setItems((list) => list!.map((it) => (it.id === item.id ? { ...it, quantity: Math.max(0, it.quantity + delta) } : it)));
@@ -63,6 +66,13 @@ export default function Inventory() {
           <Link to="/add" className="btn small"><Icon name="plus" size={18} />Add</Link>
         </div>
       </header>
+
+      {needsBackup && (
+        <Link to="/more" className="notice warn backup-nudge">
+          <strong>{backupDays == null ? 'Back up your tackle' : `Last backup was ${backupDays} days ago`}</strong>
+          <span>Your list lives only on this phone. Tap to save a copy to Files.</span>
+        </Link>
+      )}
 
       <div className="searchbar">
         <Icon name="search" size={18} />

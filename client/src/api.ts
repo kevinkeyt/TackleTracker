@@ -1,3 +1,9 @@
+import * as db from './db';
+import { cacheImage, fetchTwProduct, lookupUpc, savePhoto, twSearchUrl } from './lookup';
+
+export { isLow } from './db';
+export { twSearchUrl } from './lookup';
+
 export type Category = 'soft_plastic' | 'hard_bait' | 'terminal' | 'line' | 'rod' | 'reel' | 'other';
 
 export const CATEGORIES: { id: Category; label: string; types: string[] }[] = [
@@ -92,48 +98,28 @@ export interface CategoryStats {
   value: number;
 }
 
-async function req<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: init?.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json', ...init.headers } : init?.headers,
-  });
-  if (res.status === 204) return undefined as T;
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
-  return data as T;
-}
-
+/** All data lives on this device; these calls never need the internet except the lookups. */
 export const api = {
-  items: (params: { q?: string; category?: string; low?: boolean } = {}) => {
-    const qs = new URLSearchParams();
-    if (params.q) qs.set('q', params.q);
-    if (params.category) qs.set('category', params.category);
-    if (params.low) qs.set('low', '1');
-    return req<Item[]>(`/api/items?${qs}`);
+  items: (params: { low?: boolean } = {}) => db.listItems(params),
+  item: (id: number | string) => db.getItem(Number(id)),
+  create: (item: Partial<ItemInput>) => db.createItem(item),
+  update: (id: number, item: Partial<ItemInput>) => db.updateItem(id, item),
+  adjust: (id: number, delta: number) => db.adjustQuantity(id, delta),
+  remove: (id: number) => db.deleteItem(id),
+  stats: () => db.stats(),
+  scan: async (code: string): Promise<ScanResult> => {
+    const upc = db.normalizeUpc(code);
+    if (!upc) throw new Error('No digits in that barcode');
+    const owned = await db.findByUpc(upc);
+    const suggestion = owned.length ? null : await lookupUpc(upc);
+    return { upc, owned, suggestion, search_url: twSearchUrl(suggestion?.name || upc) };
   },
-  item: (id: number | string) => req<Item>(`/api/items/${id}`),
-  create: (item: Partial<ItemInput>) => req<Item>('/api/items', { method: 'POST', body: JSON.stringify(item) }),
-  update: (id: number, item: Partial<ItemInput>) => req<Item>(`/api/items/${id}`, { method: 'PUT', body: JSON.stringify(item) }),
-  adjust: (id: number, delta: number) => req<Item>(`/api/items/${id}/adjust`, { method: 'POST', body: JSON.stringify({ delta }) }),
-  remove: (id: number) => req<void>(`/api/items/${id}`, { method: 'DELETE' }),
-  stats: () => req<CategoryStats[]>('/api/stats'),
-  scan: (code: string) => req<ScanResult>(`/api/scan/${encodeURIComponent(code)}`),
-  twProduct: (url: string) => req<TwProduct>('/api/tw/product', { method: 'POST', body: JSON.stringify({ url }) }),
-  cacheImage: (url: string) => req<{ url: string }>('/api/images/cache', { method: 'POST', body: JSON.stringify({ url }) }),
-  uploadImage: (file: File) => {
-    const body = new FormData();
-    body.append('image', file);
-    return req<{ url: string }>('/api/images/upload', { method: 'POST', body });
-  },
-  importItems: (items: unknown[], replace: boolean) =>
-    req<{ imported: number }>(`/api/import${replace ? '?replace=1' : ''}`, { method: 'POST', body: JSON.stringify(items) }),
+  twProduct: (url: string) => fetchTwProduct(url),
+  cacheImage: async (url: string) => ({ url: await cacheImage(url) }),
+  uploadImage: async (file: File) => ({ url: await savePhoto(file) }),
+  exportBackup: () => db.exportBackup(),
+  importBackup: (data: unknown, replace: boolean) => db.importBackup(data, { replace }),
 };
-
-export const isLow = (it: Item) => it.min_quantity > 0 && it.quantity <= it.min_quantity;
-
-export function twSearchUrl(text: string) {
-  return `https://www.tacklewarehouse.com/search-tackle.html?searchtext=${encodeURIComponent(text)}`;
-}
 
 /** Where the Shop button goes: the saved product page, else a Tackle Warehouse search for it. */
 export function shopUrl(it: Pick<Item, 'product_url' | 'brand' | 'name' | 'color'>) {

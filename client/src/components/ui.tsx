@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { categoryLabel, type Item } from '../api';
+import { imageSrc } from '../db';
 
 const ICONS: Record<string, string> = {
   box: 'M3 7l9-4 9 4v10l-9 4-9-4V7zm0 0l9 4 9-4M12 11v10',
@@ -28,11 +29,26 @@ const CATEGORY_TINT: Record<string, string> = {
   soft_plastic: 'tint-green', hard_bait: 'tint-amber', terminal: 'tint-slate', line: 'tint-blue', rod: 'tint-brown', reel: 'tint-red', other: 'tint-slate',
 };
 
+/** Resolves "img:<id>" photos stored on the device to a displayable URL; remote URLs pass through. */
+function useImageSrc(ref: string | null) {
+  const [src, setSrc] = useState<string | null>(() => {
+    const r = imageSrc(ref);
+    return typeof r === 'string' ? r : null;
+  });
+  useEffect(() => {
+    let live = true;
+    Promise.resolve(imageSrc(ref)).then((s) => live && setSrc(s));
+    return () => { live = false; };
+  }, [ref]);
+  return src;
+}
+
 export function Thumb({ item, size = 'sm' }: { item: Pick<Item, 'image_url' | 'category' | 'name'>; size?: 'sm' | 'lg' }) {
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [item.image_url]);
-  if (item.image_url && !failed) {
-    return <img className={`thumb ${size}`} src={item.image_url} alt="" loading="lazy" onError={() => setFailed(true)} />;
+  const src = useImageSrc(item.image_url);
+  useEffect(() => setFailed(false), [src]);
+  if (src && !failed) {
+    return <img className={`thumb ${size}`} src={src} alt="" loading="lazy" onError={() => setFailed(true)} />;
   }
   return (
     <div className={`thumb ${size} placeholder ${CATEGORY_TINT[item.category] ?? ''}`} aria-hidden>
