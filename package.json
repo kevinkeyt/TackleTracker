@@ -8,7 +8,8 @@
     "dev": "vite --config client/vite.config.ts",
     "build": "vite build --config client/vite.config.ts",
     "preview": "vite preview --config client/vite.config.ts",
-    "typecheck": "tsc -p client --noEmit"
+    "typecheck": "tsc -p client --noEmit",
+    "deploy:worker": "npx --yes wrangler@3.99.0 deploy --config worker/wrangler.toml"
   },
   "engines": {
     "node": ">=22.13"

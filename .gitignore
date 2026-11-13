@@ -4,3 +4,4 @@ data/
 .certs/
 .DS_Store
 tackle-backup-*.json
+.wrangler/

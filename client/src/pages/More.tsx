@@ -115,8 +115,8 @@ export default function More() {
       <section className="card">
         <h2>Barcode lookup</h2>
         <p className="muted small">
-          Fills in the name of packages you haven't added yet. It needs a free relay (see <code>worker/README.md</code>).
-          Without it, scanning still finds everything you own.
+          Fills in the name of packages you haven't added yet, through a small relay (see <code>worker/README.md</code>).
+          Clear the address to turn it off; scanning still finds everything you own.
         </p>
         <form className="row" onSubmit={saveRelay}>
           <input type="url" placeholder="https://upc-relay.you.workers.dev" value={relay} onChange={(e) => setRelay(e.target.value)}

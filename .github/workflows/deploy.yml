@@ -29,6 +29,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
+        env:
+          # Barcode lookup relay (worker/). Can be changed on the phone under More → Barcode lookup.
+          VITE_UPC_RELAY: https://tackletracker-upc-relay.bassbot.workers.dev
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

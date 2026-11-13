@@ -27,10 +27,11 @@ account. The repo only contains code; your tackle data is never uploaded anywher
 
 Cloudflare Pages or Netlify work too: build command `npm run build`, output folder `dist`.
 
-## Barcode lookup for new items (optional)
+## Barcode lookup for new items
 
-Scanning always finds what you already own. To also prefill the name of packages you haven't added yet, set up the
-free relay in [`worker/`](worker/README.md) and paste its address under **More → Barcode lookup**.
+Scanning always finds what you already own. For packages you haven't added yet, the app fills in the name and brand
+through a small Cloudflare Worker relay ([`worker/`](worker/README.md)) to the free UPCitemdb lookup. Its address is
+built into the deployed app and can be changed or cleared under **More → Barcode lookup**.
 
 ## Developing
 
@@ -53,7 +54,8 @@ development lives in that browser only.
 - **Tackle Warehouse**: the phone reads a product page (`…/descpage-XXXX.html`) only when you press Load. Each color on
   the page lists its own UPC, price and swatch image. Search links open in your browser; the app doesn't scrape search
   results.
-- **Unknown barcodes** go through the optional relay to the free UPCitemdb trial API (about 100 lookups a day).
+- **Unknown barcodes** go through the relay to the free UPCitemdb trial API (about 100 lookups a day; repeat scans of
+  the same code are cached for a day).
 
 ## Layout
 
