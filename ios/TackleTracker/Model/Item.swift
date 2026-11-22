@@ -70,11 +70,15 @@ final class Item {
         color.map { "\(name) (\($0))" } ?? name
     }
 
-    /// Where the Shop button goes: the saved product page, else a Tackle Warehouse search for it.
+    /// Where Shop goes: the saved product page, else a web search for it.
     var shopURL: URL {
-        if let productURL, let url = URL(string: productURL) { return url }
-        let text = [brandIfNotInName, name, color].compactMap { $0?.nilIfBlank }.joined(separator: " ")
-        return TackleWarehouse.searchURL(text)
+        if let productURL, let url = ProductPage.link(from: productURL) { return url }
+        return WebSearch.url(searchQuery)
+    }
+
+    /// "Zoom Trick Worm Green Pumpkin", for searching stores or the web.
+    var searchQuery: String {
+        [brandIfNotInName, name, color].compactMap { $0?.nilIfBlank }.joined(separator: " ")
     }
 
     var searchText: String {

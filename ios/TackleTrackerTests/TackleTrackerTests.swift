@@ -37,17 +37,80 @@ struct CategoryTests {
     }
 }
 
-struct TackleWarehouseTests {
-    @Test func acceptsOnlyProductLinks() throws {
-        let url = try TackleWarehouse.productURL(from: " http://tacklewarehouse.com/Zoom_Trick_Worm/descpage-ZTW.html#reviews ")
-        #expect(url.absoluteString == "https://www.tacklewarehouse.com/Zoom_Trick_Worm/descpage-ZTW.html")
-        #expect(throws: TWError.self) { try TackleWarehouse.productURL(from: "https://example.com/descpage-X.html") }
-        #expect(throws: TWError.self) { try TackleWarehouse.productURL(from: "https://www.tacklewarehouse.com/catpage-soft.html") }
+struct ProductPageTests {
+    @Test func acceptsLinksFromAnyStore() throws {
+        #expect(ProductPage.link(from: " https://www.basspro.com/shop/en/zoom-trick-worm#reviews ")?.absoluteString
+                == "https://www.basspro.com/shop/en/zoom-trick-worm")
+        #expect(ProductPage.link(from: "http://example-baits.com/products/craw")?.absoluteString == "https://example-baits.com/products/craw")
+        #expect(ProductPage.link(from: "example-baits.com/products/craw")?.absoluteString == "https://example-baits.com/products/craw")
+        #expect(ProductPage.link(from: "Zoom Trick Worm") == nil)
+        #expect(ProductPage.link(from: "ftp://example.com/x") == nil)
+        #expect(ProductPage.link(from: "") == nil)
     }
 
-    @Test func parsesProductPage() async throws {
+    /// Shopify-style JSON-LD: one Product with an offer per variant.
+    @Test func readsJSONLDOffers() async throws {
         let html = """
-        <html><head><title>Zoom Trick Worm 20pk - Tackle Warehouse</title>
+        <html><head><title>Rage Craw | Example Baits</title>
+        <script type="application/ld+json">
+        {"@context":"https://schema.org","@type":"Product","name":"Strike King Rage Craw",
+         "brand":{"@type":"Brand","name":"Strike King"},"image":["https://cdn.example.com/craw.jpg"],
+         "offers":[
+          {"@type":"Offer","name":"Green Pumpkin","sku":"RC-GP","gtin12":"051525000016","price":"4.99","availability":"https://schema.org/InStock"},
+          {"@type":"Offer","name":"Black Blue Flake","sku":"RC-BB","price":4.99,"availability":"https://schema.org/OutOfStock"}]}
+        </script></head><body></body></html>
+        """
+        let p = try await ProductPage.parse(html: html, url: URL(string: "https://example-baits.com/products/rage-craw")!)
+        #expect(p.name == "Strike King Rage Craw")
+        #expect(p.brand == "Strike King")
+        #expect(p.image?.absoluteString == "https://cdn.example.com/craw.jpg")
+        #expect(p.category == .softPlastic)
+        #expect(p.variants.map(\.title) == ["Green Pumpkin", "Black Blue Flake"])
+        #expect(p.variants[0].upc == "51525000016")
+        #expect(p.variants[0].price == 4.99)
+        #expect(p.variants[0].inStock == "In stock")
+        #expect(p.variants[1].inStock == "Out of stock")
+    }
+
+    /// JSON-LD inside an @graph, as a ProductGroup with variant Products.
+    @Test func readsJSONLDProductGroup() async throws {
+        let html = """
+        <script type="application/ld+json">
+        {"@graph":[{"@type":"WebPage","name":"ignored"},
+          {"@type":"ProductGroup","name":"Gamakatsu EWG Worm Hook","brand":"Gamakatsu",
+           "hasVariant":[
+            {"@type":"Product","size":"3/0","sku":"G-30","offers":{"@type":"Offer","price":"5.99"}},
+            {"@type":"Product","size":"4/0","sku":"G-40","gtin13":"0012345678905","offers":{"@type":"Offer","price":"6.49"}}]}]}
+        </script>
+        """
+        let p = try await ProductPage.parse(html: html, url: URL(string: "https://shop.example.com/hooks")!)
+        #expect(p.name == "Gamakatsu EWG Worm Hook")
+        #expect(p.category == .terminal)
+        #expect(p.variants.count == 2)
+        #expect(p.variants[1].size == "4/0")
+        #expect(p.variants[1].price == 6.49)
+        #expect(p.variants[1].upc == "12345678905")
+    }
+
+    /// A single product: one option, so the form can fill in without asking.
+    @Test func readsSingleProduct() async throws {
+        let html = """
+        <script type="application/ld+json">
+        [{"@type":"Product","name":"Shimano Curado DC Casting Reel","sku":"CU-DC","gtin":"022255000012",
+          "offers":{"@type":"AggregateOffer","lowPrice":"229.99","highPrice":"249.99"}}]
+        </script>
+        """
+        let p = try await ProductPage.parse(html: html, url: URL(string: "https://store.example.com/reel")!)
+        #expect(p.category == .reel)
+        #expect(p.variants.count == 1)
+        #expect(p.variants[0].price == 229.99)
+        #expect(p.variants[0].sku == "CU-DC")
+    }
+
+    /// Microdata with one offer row per color, with relative swatch images.
+    @Test func readsMicrodataOfferRows() async throws {
+        let html = """
+        <html><head><title>Zoom Trick Worm 20pk - Some Store</title>
         <meta itemprop="brand" content="Zoom"></head><body>
         <img itemprop="image" src="/image.php?path=zoom.jpg&nw=200" srcset="/image.php?path=zoom.jpg&nw=300 300w, /image.php?path=zoom.jpg&nw=900 900w">
         <table class="js-ordering-table" data-owner-name="Zoom Trick Worm 20pk">
@@ -64,22 +127,79 @@ struct TackleWarehouseTests {
           </tr>
         </table></body></html>
         """
-        let url = URL(string: "https://www.tacklewarehouse.com/Zoom_Trick_Worm/descpage-ZTW.html")!
-        let p = try await TackleWarehouse.parse(html: html, url: url)
+        let p = try await ProductPage.parse(html: html, url: URL(string: "https://store.example.com/zoom/trick-worm.html")!)
         #expect(p.name == "Zoom Trick Worm 20pk")
         #expect(p.brand == "Zoom")
-        #expect(p.category == .softPlastic)
-        #expect(p.image?.absoluteString.contains("nw=600") == true)
+        #expect(p.image?.absoluteString == "https://store.example.com/image.php?path=zoom.jpg&nw=600")
         #expect(p.variants.count == 2)
         let gp = p.variants[0]
         #expect(gp.sku == "ZTW-GP")
-        #expect(gp.price == 4.79)
         #expect(gp.upc == "74660000012")
-        #expect(gp.color == "Green Pumpkin")
-        #expect(gp.size == "6.5\"")
-        #expect(gp.inStock == "In Stock")
-        #expect(gp.image?.absoluteString == "https://www.tacklewarehouse.com/image.php?path=gp.jpg&nw=600")
+        #expect(gp.title == "Green Pumpkin, 6.5\"")
+        #expect(gp.image?.absoluteString == "https://store.example.com/image.php?path=gp.jpg&nw=600")
         #expect(p.variants[1].title == "Watermelon Red")
+    }
+
+    /// Only link-preview tags: still gets a name, photo and price.
+    @Test func fallsBackToOpenGraph() async throws {
+        let html = """
+        <html><head><title>ignored</title>
+        <meta property="og:site_name" content="Local Bait Co">
+        <meta property="og:title" content="Senko 5in Watermelon | Local Bait Co">
+        <meta property="og:image" content="//cdn.localbait.example/senko.jpg">
+        <meta property="product:price:amount" content="8.99">
+        </head></html>
+        """
+        let p = try await ProductPage.parse(html: html, url: URL(string: "https://localbait.example/senko")!)
+        #expect(p.name == "Senko 5in Watermelon")
+        #expect(p.image?.absoluteString == "https://cdn.localbait.example/senko.jpg")
+        #expect(p.variants.first?.price == 8.99)
+    }
+
+    @Test func rejectsPagesWithoutProducts() async {
+        await #expect(throws: ProductPageError.self) {
+            try await ProductPage.parse(html: "<html><body><p>hello</p></body></html>", url: URL(string: "https://example.com")!)
+        }
+    }
+
+    @Test func cleansTitles() {
+        #expect(ProductPage.cleanTitle("Rage Craw - Bass Shop", site: "Bass Shop") == "Rage Craw")
+        #expect(ProductPage.cleanTitle("Rage Craw | Bass Shop", site: nil) == "Rage Craw")
+        #expect(ProductPage.cleanTitle("Rage Craw", site: "Bass Shop") == "Rage Craw")
+    }
+
+    @Test func searchesTheWeb() {
+        #expect(WebSearch.url("Zoom Trick Worm 6.5\"").absoluteString == "x-web-search://?Zoom%20Trick%20Worm%206.5%22")
+        #expect(WebSearch.url("A&B").absoluteString == "x-web-search://?A%26B")
+    }
+}
+
+struct ShoppingListTests {
+    private let entries = [
+        ShoppingList.Entry(name: "Zoom Trick Worm", details: ["Watermelon Red", "6.5\""], quantity: 3, unit: "pack", onHand: 1,
+                           price: 4.79, link: URL(string: "https://store.example.com/ztw"), category: .softPlastic),
+        ShoppingList.Entry(name: "KVD 1.5 Squarebill", details: ["Strike King", "Sexy Shad"], quantity: 1, unit: "each", onHand: 2,
+                           price: 7.49, link: nil, category: .hardBait),
+    ]
+
+    @Test func groupsByCategoryWithQuantities() {
+        let date = Date(timeIntervalSince1970: 1_795_000_000)
+        let text = ShoppingList.text(entries, options: .init(showOnHand: true), date: date)
+        let lines = text.components(separatedBy: "\n")
+        #expect(lines[0] == "Tackle Shopping List")
+        #expect(lines.contains("Soft plastics"))
+        #expect(lines.contains("3 packs Zoom Trick Worm (Watermelon Red, 6.5\"), have 1"))
+        #expect(lines.contains("1 × KVD 1.5 Squarebill (Strike King, Sexy Shad), have 2"))
+        #expect(lines.firstIndex(of: "Soft plastics")! < lines.firstIndex(of: "Hard baits")!)
+        #expect(!text.contains("$"))
+        #expect(!text.contains("https://"))
+    }
+
+    @Test func optionalPricesAndLinks() {
+        let text = ShoppingList.text(entries, options: .init(showOnHand: false, showPrices: true, showLinks: true))
+        #expect(text.contains("3 packs Zoom Trick Worm (Watermelon Red, 6.5\"), $4.79 each\nhttps://store.example.com/ztw"))
+        #expect(text.hasSuffix("Estimated total: $21.86"))
+        #expect(!text.contains("have "))
     }
 }
 
@@ -108,7 +228,7 @@ struct BackupTests {
      "items":[
       {"id":3,"name":"Zoom Trick Worm","brand":"Zoom","category":"soft_plastic","type":"Worm","color":"Green Pumpkin","size":"6.5\\"",
        "quantity":4,"unit":"pack","min_quantity":2,"location":"Bin 3","upc":"74660000012","sku":"ZTW-GP","price":4.79,
-       "image_url":"img:abc","product_url":"https://www.tacklewarehouse.com/x/descpage-ZTW.html","specs":{},"notes":null,
+       "image_url":"img:abc","product_url":"https://store.example.com/x/ztw.html","specs":{},"notes":null,
        "on_list":false,"created_at":"2026-09-01T10:00:00.000Z","updated_at":"2026-09-02T10:00:00.000Z"},
       {"id":4,"name":"Curado DC","category":"reel","quantity":1,"unit":"each","min_quantity":0,"specs":{"Gear ratio":"7.4:1"},
        "image_url":"https://example.com/reel.jpg","on_list":true},
@@ -176,7 +296,9 @@ struct ItemTests {
         #expect(it.isLow)
         #expect(it.suggestedBuy == 5)
         #expect(it.summary == "Green Pumpkin")
-        #expect(it.shopURL.absoluteString.contains("searchtext=Zoom%20Trick%20Worm%20Green%20Pumpkin"))
+        #expect(it.shopURL.absoluteString == "x-web-search://?Zoom%20Trick%20Worm%20Green%20Pumpkin")
+        it.productURL = "https://store.example.com/ztw"
+        #expect(it.shopURL.absoluteString == "https://store.example.com/ztw")
         it.adjust(by: -5)
         #expect(it.quantity == 0)
     }

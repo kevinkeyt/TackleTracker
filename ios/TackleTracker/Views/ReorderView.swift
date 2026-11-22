@@ -5,6 +5,7 @@ struct ReorderView: View {
     @Query private var allItems: [Item]
     @State private var receiving: Item?
     @State private var receivedCount = ""
+    @State private var showingList = false
     @Environment(\.openURL) private var openURL
 
     private var items: [Item] { allItems.filter(\.needsReorder).sorted(by: Item.shelfOrder) }
@@ -56,10 +57,13 @@ struct ReorderView: View {
             .navigationDestination(for: Item.self) { ItemDetailView(item: $0) }
             .toolbar {
                 if !items.isEmpty {
-                    ShareLink(item: shoppingList(items), subject: Text("Tackle to reorder")) {
-                        Label("Share List", systemImage: "square.and.arrow.up")
+                    Button { showingList = true } label: {
+                        Label("Shopping List", systemImage: "list.bullet.clipboard")
                     }
                 }
+            }
+            .sheet(isPresented: $showingList) {
+                ShoppingListView(items: items)
             }
             .alert(receivedTitle, isPresented: Binding(get: { receiving != nil }, set: { if !$0 { receiving = nil } })) {
                 TextField("How many", text: $receivedCount).keyboardType(.numberPad)
@@ -86,11 +90,5 @@ struct ReorderView: View {
         it.adjust(by: n)
         it.onList = false
         receiving = nil
-    }
-
-    private func shoppingList(_ items: [Item]) -> String {
-        items.map { it in
-            "\(it.suggestedBuy)× \(it.name)\(it.color.map { " — \($0)" } ?? "")\(it.size.map { " (\($0))" } ?? "")"
-        }.joined(separator: "\n")
     }
 }

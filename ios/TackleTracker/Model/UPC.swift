@@ -8,7 +8,7 @@ nonisolated enum UPC {
         return trimmed.isEmpty ? nil : String(trimmed)
     }
 
-    /// UPC-E is the short code on small packages; stores and Tackle Warehouse list the full UPC-A.
+    /// UPC-E is the short code on small packages; stores and product pages list the full UPC-A.
     static func expandUPCE(_ code: String) -> String {
         let c = Array(code)
         guard c.count == 8, c.allSatisfy(\.isASCIIDigit), c[0] == "0" || c[0] == "1" else { return code }

@@ -26,9 +26,9 @@ struct ItemEditView: View {
     @State private var pickedPhoto: PhotosPickerItem?
     @State private var imageBusy = false
 
-    @State private var twURL: String
-    @State private var tw: TWProduct?
-    @State private var twLoading = false
+    @State private var linkText: String
+    @State private var product: ProductInfo?
+    @State private var linkLoading = false
     @State private var choosingVariant = false
 
     init(mode: Mode, onSaved: @escaping (Item) -> Void = { _ in }) {
@@ -36,7 +36,7 @@ struct ItemEditView: View {
         self.onSaved = onSaved
         let draft = Draft(mode)
         _draft = State(initialValue: draft)
-        _twURL = State(initialValue: draft.productURL ?? "")
+        _linkText = State(initialValue: draft.productURL ?? "")
     }
 
     private var editingItem: Item? {
@@ -47,7 +47,7 @@ struct ItemEditView: View {
     var body: some View {
         NavigationStack {
             Form {
-                twSection
+                linkSection
                 noticesSection
                 photoSection
                 mainSection
@@ -110,10 +110,10 @@ struct ItemEditView: View {
                 }
             }
             .navigationDestination(isPresented: $choosingVariant) {
-                if let tw {
-                    VariantList(product: tw) { v in
+                if let product {
+                    VariantList(product: product) { v in
                         choosingVariant = false
-                        Task { await apply(tw, v) }
+                        Task { await apply(product, v) }
                     }
                 }
             }
@@ -123,43 +123,43 @@ struct ItemEditView: View {
 
     // MARK: Sections
 
-    private var twSection: some View {
+    private var linkSection: some View {
         Section {
             HStack {
-                TextField("Product link", text: $twURL)
+                TextField("Product link", text: $linkText, prompt: Text("Paste a product page link"))
                     .keyboardType(.URL)
                     .textContentType(.URL)
                     .autocorrectionDisabled()
                     .textInputAutocapitalization(.never)
-                    .onSubmit { Task { await loadTW() } }
-                if twURL.isEmpty {
+                    .onSubmit { Task { await loadLink() } }
+                if linkText.isEmpty {
                     PasteButton(payloadType: String.self) { strings in
                         guard let clip = strings.first else { return }
-                        twURL = clip
-                        if TackleWarehouse.isProductLink(clip) { Task { await loadTW(clip) } }
+                        linkText = clip
+                        if ProductPage.link(from: clip) != nil { Task { await loadLink(clip) } }
                     }
                     .labelStyle(.iconOnly)
                     .buttonBorderShape(.capsule)
-                } else if twLoading {
+                } else if linkLoading {
                     ProgressView()
                 } else {
-                    Button("Load") { Task { await loadTW() } }
+                    Button("Load") { Task { await loadLink() } }
                         .buttonStyle(.borderless)
                 }
             }
-            if let tw {
+            if let product, product.variants.count > 1 {
                 Button { choosingVariant = true } label: {
-                    LabeledContent("Choose Color", value: "\(tw.variants.count) options")
+                    LabeledContent("Choose Option", value: "\(product.variants.count) options")
                 }
                 .foregroundStyle(.primary)
             }
-            Link(destination: TackleWarehouse.searchURL([draft.brand, draft.name].compactMap(\.nilIfBlank).joined(separator: " ").nilIfBlank ?? draft.upc)) {
-                Label("Search Tackle Warehouse", systemImage: "safari")
+            Link(destination: WebSearch.url([draft.brand, draft.name].compactMap(\.nilIfBlank).joined(separator: " ").nilIfBlank ?? draft.upc)) {
+                Label("Search the Web", systemImage: "magnifyingglass")
             }
         } header: {
-            Text("Fill In from Tackle Warehouse")
+            Text("Fill In from a Product Link")
         } footer: {
-            Text("Copy a product's link from Tackle Warehouse and paste it here. Choose the color, and the photo, price and UPC are filled in.")
+            Text("Paste the link to the product on any store's website. Whatever the page lists, like the name, photo, price and UPC, is filled in, and the link is saved so you can reorder.")
         }
     }
 
@@ -293,7 +293,7 @@ struct ItemEditView: View {
         switch mode {
         case .copy(let source):
             // Same product family: jump straight to its color list so adding another color is two taps.
-            if let link = source.productURL, TackleWarehouse.isProductLink(link) { await loadTW(link) }
+            if let link = source.productURL { await loadLink(link) }
         case .new(_, let suggestion):
             if let image = suggestion?.image { await setRemoteImage(image) }
         case .edit:
@@ -301,47 +301,55 @@ struct ItemEditView: View {
         }
     }
 
-    private func loadTW(_ link: String? = nil) async {
-        let url = (link ?? twURL).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !url.isEmpty else { return }
-        twLoading = true
+    private func loadLink(_ link: String? = nil) async {
+        let text = (link ?? linkText).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
         error = nil
-        defer { twLoading = false }
+        guard let url = ProductPage.link(from: text) else {
+            error = ProductPageError.invalidLink.localizedDescription
+            return
+        }
+        // Whatever the page turns out to say, the link is where to reorder.
+        draft.productURLText = url.absoluteString
+        linkLoading = true
+        defer { linkLoading = false }
         do {
-            let product = try await TackleWarehouse.fetchProduct(url)
-            tw = product
-            if let upc = UPC.normalize(draft.upc), let match = product.variants.first(where: { $0.upc == upc }) {
-                await apply(product, match)
-            } else if product.variants.count == 1 {
-                await apply(product, product.variants[0])
+            let info = try await ProductPage.fetch(url.absoluteString)
+            product = info
+            draft.productURLText = info.url.absoluteString
+            if let upc = UPC.normalize(draft.upc), let match = info.variants.first(where: { $0.upc == upc }) {
+                await apply(info, match)
+            } else if info.variants.count == 1 {
+                await apply(info, info.variants[0])
             } else {
-                if editingItem == nil && draft.name.nilIfBlank == nil {
-                    draft.name = product.name
-                    draft.brand = product.brand ?? draft.brand
-                    draft.category = product.category
-                    draft.productURLText = product.url.absoluteString
-                }
-                if !product.variants.isEmpty { choosingVariant = true }
+                fillProduct(info)
+                if let image = info.image, draft.photo == nil, draft.imageURL == nil { await setRemoteImage(image) }
+                if info.variants.count > 1 { choosingVariant = true }
             }
         } catch {
             self.error = error.localizedDescription
         }
     }
 
-    private func apply(_ product: TWProduct, _ v: TWVariant) async {
-        let keepCategory = editingItem != nil && draft.name.nilIfBlank != nil
-        draft.name = product.name
-        draft.brand = product.brand ?? draft.brand
-        if !keepCategory { draft.category = product.category }
+    /// Product-level details, without overwriting what's already typed in when editing.
+    private func fillProduct(_ info: ProductInfo) {
+        let editing = editingItem != nil && draft.name.nilIfBlank != nil
+        if !editing || draft.name.nilIfBlank == nil, info.name.nilIfBlank != nil { draft.name = info.name }
+        if draft.brand.nilIfBlank == nil, let brand = info.brand { draft.brand = brand }
+        if !editing && info.category != .other { draft.category = info.category }
+    }
+
+    private func apply(_ info: ProductInfo, _ v: ProductVariant) async {
+        fillProduct(info)
         draft.color = v.color ?? draft.color
         draft.size = v.size ?? draft.size
-        draft.sku = v.sku ?? ""
-        draft.priceText = v.price.map { String(format: "%.2f", $0) } ?? ""
+        draft.sku = v.sku ?? draft.sku
+        if let price = v.price { draft.priceText = String(format: "%.2f", price) }
         draft.upc = v.upc ?? draft.upc
-        draft.productURLText = product.url.absoluteString
+        draft.productURLText = info.url.absoluteString
         for (k, value) in v.styles where k != "Color" { draft.specs[k] = value }
-        tw = nil
-        if let image = v.image ?? product.image { await setRemoteImage(image) }
+        product = nil
+        if let image = v.image ?? info.image { await setRemoteImage(image) }
     }
 
     private func setRemoteImage(_ url: URL) async {
@@ -381,10 +389,10 @@ struct ItemEditView: View {
     }
 }
 
-/// Every color/size on a Tackle Warehouse page, as a searchable list.
+/// Every color/size a product page offers, as a searchable list.
 private struct VariantList: View {
-    let product: TWProduct
-    let onPick: (TWVariant) -> Void
+    let product: ProductInfo
+    let onPick: (ProductVariant) -> Void
     @State private var filter = ""
 
     var body: some View {
@@ -412,7 +420,7 @@ private struct VariantList: View {
         }
         .navigationTitle(product.name)
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $filter, prompt: "Colors")
+        .searchable(text: $filter, prompt: "Options")
         .overlay {
             if shown.isEmpty { ContentUnavailableView.search(text: filter) }
         }

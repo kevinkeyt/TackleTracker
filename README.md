@@ -5,9 +5,10 @@ tackle room. **All of your data stays on your phone.** There's no account and no
 
 - **Scan a barcode** to see if you already own it (and how many), or add it if you don't. Works in the store too, so you don't buy what you already have.
 - **Scan modes**: *Add +1* counts packages as you shelve them; *Take out −1* removes one per scan when you load the boat or use something up. Each scan can be undone.
-- **Fill in from Tackle Warehouse**: paste a product link, tap your color, and the name, brand, photo, price, SKU and UPC are filled in. Photos are saved on the phone.
-- **Reorder list**: set a "reorder at" level per item. Anything at or below it (or added to the list by hand) shows up with a **Shop** button that goes back to Tackle Warehouse.
-- **Works offline.** Only Tackle Warehouse import, barcode lookup for new items, and the Shop links need a connection.
+- **Fill in from a product link**: paste the link to the product on any store's website. Whatever the page lists (name, brand, photo, price, SKU, UPC, and the colors or sizes it comes in) is filled in, and the link is saved for reordering. Photos are saved on the phone.
+- **Reorder list**: set a "reorder at" level per item. Anything at or below it (or added to the list by hand) shows up with **Shop**, which opens the saved product link or searches the web.
+- **Shopping list**: from the Reorder tab, pick what to buy and how many, then share it to Notes for a trip to your local tackle store.
+- **Works offline.** Only filling in from a link, barcode lookup for new items, and Shop need a connection.
 - **Backups** to Files / iCloud Drive (photos included) and spreadsheet (CSV) export from the **More** tab.
 
 ## Installing it on your iPhone
@@ -46,7 +47,9 @@ lookups a day). Its address is built in and can be changed or cleared under **Mo
 ## Developing
 
 Open `ios/TackleTracker.xcodeproj` and run on a simulator or phone. The project uses
-[SwiftSoup](https://github.com/scinfu/SwiftSoup) (fetched by Xcode) to read Tackle Warehouse pages.
+[SwiftSoup](https://github.com/scinfu/SwiftSoup) (fetched by Xcode) to read product pages. Product details come from
+the structured data most stores publish for search engines and link previews: schema.org JSON-LD, schema.org microdata,
+then Open Graph tags.
 
 Run the tests with ⌘U in Xcode, or:
 
@@ -61,7 +64,7 @@ items for trying out screens.
 ## Layout
 
 - `ios/TackleTracker/Model`: the `Item` SwiftData model, categories, UPC handling
-- `ios/TackleTracker/Services`: Tackle Warehouse import, barcode lookup, photos, backup/restore/CSV
+- `ios/TackleTracker/Services`: product page import, barcode lookup, photos, shopping list, backup/restore/CSV
 - `ios/TackleTracker/Views`: the Tackle, Scan, Reorder and More tabs and the item screens
 - `ios/TackleTrackerTests`: unit tests
 - `worker/`: the barcode lookup relay (Cloudflare Worker)

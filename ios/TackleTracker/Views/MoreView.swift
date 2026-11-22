@@ -22,7 +22,7 @@ struct MoreView: View {
                 Section("Tips") {
                     Label("On the Scan tab, Add +1 tallies packages as you shelve them, and Take Out −1 removes them as they go in the boat.", systemImage: "barcode.viewfinder")
                     Label("Swipe right on an item to add one, or left to take one out.", systemImage: "hand.draw")
-                    Label("Tackle Warehouse import and the Shop links need internet. Everything else works offline.", systemImage: "wifi.slash")
+                    Label("Filling in from a product link, barcode lookup and Shop need internet. Everything else works offline.", systemImage: "wifi.slash")
                 }
                 .font(.subheadline)
             }

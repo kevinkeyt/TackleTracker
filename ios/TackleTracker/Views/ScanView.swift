@@ -29,7 +29,7 @@ struct ScanResult: Identifiable {
     let owned: [Item]
     let suggestion: UpcSuggestion?
 
-    var searchURL: URL { TackleWarehouse.searchURL(suggestion?.name ?? upc) }
+    var searchURL: URL { WebSearch.url(suggestion?.name ?? upc) }
 }
 
 struct ScanView: View {
@@ -219,7 +219,7 @@ private struct ScanResultSheet: View {
                 Section {
                     Button(result.owned.isEmpty ? "Add to My Tackle" : "Add as Separate Item", action: onAddNew)
                     Link(destination: result.searchURL) {
-                        Label("Search Tackle Warehouse", systemImage: "safari")
+                        Label("Search the Web", systemImage: "magnifyingglass")
                     }
                 }
             }

@@ -50,7 +50,7 @@ struct ItemDetailView: View {
 
             Section {
                 Link(destination: item.shopURL) {
-                    Label(item.productURL != nil ? "Buy More" : "Find on Tackle Warehouse", systemImage: "safari")
+                    Label(item.productURL != nil ? "Open Product Page" : "Search the Web", systemImage: item.productURL != nil ? "safari" : "magnifyingglass")
                 }
                 Toggle(isOn: Binding(get: { item.onList }, set: { item.onList = $0; item.updatedAt = .now })) {
                     Label("On Reorder List", systemImage: "cart")

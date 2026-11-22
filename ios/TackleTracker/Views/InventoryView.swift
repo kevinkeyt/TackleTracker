@@ -112,7 +112,7 @@ struct InventoryView: View {
             ContentUnavailableView {
                 Label("No Tackle Yet", systemImage: "shippingbox")
             } description: {
-                Text("Scan a package's barcode, or paste a Tackle Warehouse link to add your first item.")
+                Text("Scan a package's barcode, or paste a product link from any store to add your first item.")
             } actions: {
                 Button("Scan a Barcode") { tab = .scan }
                     .buttonStyle(.borderedProminent)
