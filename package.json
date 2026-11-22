@@ -1,33 +1,9 @@
 {
   "name": "tackletracker",
   "private": true,
-  "version": "0.1.0",
-  "description": "Phone app for tracking baits, tackle, rods and reels; scan barcodes; reorder from Tackle Warehouse. All data stays on the phone.",
-  "type": "module",
+  "version": "1.0.0",
+  "description": "Barcode lookup relay for the TackleTracker iOS app (the app itself is in ios/).",
   "scripts": {
-    "dev": "vite --config client/vite.config.ts",
-    "build": "vite build --config client/vite.config.ts",
-    "preview": "vite preview --config client/vite.config.ts",
-    "typecheck": "tsc -p client --noEmit",
     "deploy:worker": "npx --yes wrangler@3.99.0 deploy --config worker/wrangler.toml"
-  },
-  "engines": {
-    "node": ">=22.13"
-  },
-  "dependencies": {
-    "@zxing/browser": "^0.1.5",
-    "@zxing/library": "^0.21.3",
-    "idb": "^8.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "^18.3.1",
-    "@vitejs/plugin-basic-ssl": "^1.1.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.6.3",
-    "vite": "^5.4.11"
   }
 }

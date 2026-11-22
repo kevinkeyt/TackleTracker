@@ -1,7 +1,15 @@
-node_modules/
-dist/
-data/
-.certs/
 .DS_Store
 tackle-backup-*.json
 .wrangler/
+node_modules/
+
+# Xcode
+xcuserdata/
+DerivedData/
+*.xcuserstate
+build/
+
+# Left over from the old web app (dev certificates, build output, server data)
+.certs/
+dist/
+data/

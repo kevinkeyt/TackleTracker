@@ -1,65 +1,67 @@
 # TackleTracker
 
-Keep track of your soft plastics, hard baits, terminal tackle, line, rods and reels from your phone in the tackle room.
-It's a web app you add to your home screen. **All of your data stays on your phone**, so there is no server or computer to keep running.
+An iPhone app for keeping track of your soft plastics, hard baits, terminal tackle, line, rods and reels in the
+tackle room. **All of your data stays on your phone.** There's no account and no server to keep running.
 
 - **Scan a barcode** to see if you already own it (and how many), or add it if you don't. Works in the store too, so you don't buy what you already have.
 - **Scan modes**: *Add +1* counts packages as you shelve them; *Take out −1* removes one per scan when you load the boat or use something up. Each scan can be undone.
-- **Fill in from Tackle Warehouse**: paste a product link, tap your color, and the name, brand, photo, price, SKU and UPC are filled in for you. Photos are saved on the phone.
+- **Fill in from Tackle Warehouse**: paste a product link, tap your color, and the name, brand, photo, price, SKU and UPC are filled in. Photos are saved on the phone.
 - **Reorder list**: set a "reorder at" level per item. Anything at or below it (or added to the list by hand) shows up with a **Shop** button that goes back to Tackle Warehouse.
-- **Works offline** once installed. Only Tackle Warehouse import and the Shop links need a connection.
+- **Works offline.** Only Tackle Warehouse import, barcode lookup for new items, and the Shop links need a connection.
 - **Backups** to Files / iCloud Drive (photos included) and spreadsheet (CSV) export from the **More** tab.
 
-## Using it on your phone
+## Installing it on your iPhone
 
-1. Open the app's address in Safari (or Chrome on Android).
-2. Tap **Share → Add to Home Screen**. It now opens like an app.
-3. Every couple of weeks, use **More → Back up now** and choose **Save to Files**. The app reminds you if it's been a while.
+You need a Mac with Xcode (26 or later) and an iPhone on iOS 18 or later.
 
-Because the data lives only on the phone, deleting the home-screen app or clearing Safari's website data deletes your tackle list. A backup restores it.
+1. Open `ios/TackleTracker.xcodeproj` in Xcode.
+2. Select the **TackleTracker** target → **Signing & Capabilities**, and pick your Apple ID under **Team**. If Xcode
+   says the bundle identifier is taken, change `com.tackletracker.app` to something of your own, such as `com.yourname.tackletracker`.
+3. Plug in your iPhone (or pair it over Wi-Fi), choose it as the run destination, and press **Run** (⌘R).
+4. The first time, on the iPhone go to **Settings → General → VPN & Device Management**, and trust your developer certificate.
 
-## Hosting
+With a free Apple ID the app stops opening after 7 days; run it from Xcode again to renew it (your data is kept).
+With the paid Apple Developer Program ($99/year) installs last a year, and you can share it through TestFlight.
 
-The app is a folder of static files (`npm run build` → `dist/`), so any free static host works. This repo deploys to
-**GitHub Pages** automatically on every push to `main` (`.github/workflows/deploy.yml`). To turn that on, go to the
-repo's **Settings → Pages** and set **Source** to **GitHub Actions**. GitHub Pages needs a public repo on a free
-account. The repo only contains code; your tackle data is never uploaded anywhere.
+### Moving over from the old web app
 
-Cloudflare Pages or Netlify work too: build command `npm run build`, output folder `dist`.
+The web version kept its data in Safari, which the app can't read. In the web app, use **More → Back up now** and
+save the file to Files. Then in the iOS app, use **More → Restore from a backup…** and pick that file. Photos come along.
+
+## Backups
+
+Data lives only on the phone, so deleting the app deletes your tackle list. Every couple of weeks, use
+**More → Back up now** and choose **Save to Files** (iCloud Drive). The app reminds you if it's been a while.
+
+The app is set up so iCloud sync can be turned on later (it needs the paid developer program): add the iCloud
+capability with CloudKit in Xcode and change `cloudKitDatabase: .none` to `.automatic` in
+[`TackleTrackerApp.swift`](ios/TackleTracker/TackleTrackerApp.swift).
 
 ## Barcode lookup for new items
 
 Scanning always finds what you already own. For packages you haven't added yet, the app fills in the name and brand
-through a small Cloudflare Worker relay ([`worker/`](worker/README.md)) to the free UPCitemdb lookup. Its address is
-built into the deployed app and can be changed or cleared under **More → Barcode lookup**.
+through a small Cloudflare Worker relay ([`worker/`](worker/README.md)) to the free UPCitemdb lookup (about 100
+lookups a day). Its address is built in and can be changed or cleared under **More → Barcode lookup**.
 
 ## Developing
 
-Requires Node 22.13 or later.
+Open `ios/TackleTracker.xcodeproj` and run on a simulator or phone. The project uses
+[SwiftSoup](https://github.com/scinfu/SwiftSoup) (fetched by Xcode) to read Tackle Warehouse pages.
+
+Run the tests with ⌘U in Xcode, or:
 
 ```bash
-npm install
+xcodebuild test -project ios/TackleTracker.xcodeproj -scheme TackleTracker -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-```bash
-npm run dev
-```
-
-The dev server runs at https://localhost:5173 and on your LAN (the address is printed), so you can try changes on
-your phone. Accept the certificate warning; it's needed for camera access during development. Data you create in
-development lives in that browser only.
-
-## How the lookups work
-
-- **Tackle Warehouse**: the phone reads a product page (`…/descpage-XXXX.html`) only when you press Load. Each color on
-  the page lists its own UPC, price and swatch image. Search links open in your browser; the app doesn't scrape search
-  results.
-- **Unknown barcodes** go through the relay to the free UPCitemdb trial API (about 100 lookups a day; repeat scans of
-  the same code are cached for a day).
+Live camera scanning needs a real iPhone; in the Simulator, use **Snap photo** (which picks from the photo library)
+or type the UPC. In Debug builds, launching with the `-seedSampleData` argument replaces the list with a few sample
+items for trying out screens.
 
 ## Layout
 
-```
-client/    React + Vite app: IndexedDB storage (db.ts), lookups (lookup.ts), ZXing scanner, service worker
-worker/    Optional Cloudflare Worker relay for barcode lookups
-```
+- `ios/TackleTracker/Model`: the `Item` SwiftData model, categories, UPC handling
+- `ios/TackleTracker/Services`: Tackle Warehouse import, barcode lookup, photos, backup/restore/CSV
+- `ios/TackleTracker/Views`: the Tackle, Scan, Reorder and More tabs and the item screens
+- `ios/TackleTrackerTests`: unit tests
+- `worker/`: the barcode lookup relay (Cloudflare Worker)
