@@ -4,5 +4,6 @@ compatibility_date = "2024-11-01"
 workers_dev = true
 
 [vars]
-# Comma-separated sites allowed to call the relay from a browser. Dev servers are included for testing.
-ALLOWED_ORIGINS = "https://kevinkeyt.github.io,https://localhost:5173,http://localhost:4173"
+# Websites allowed to call the relay from a browser, comma-separated ("*" for any). Empty blocks all
+# websites; the iOS app isn't a website and is always allowed.
+ALLOWED_ORIGINS = ""

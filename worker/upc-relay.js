@@ -1,10 +1,13 @@
-// Cloudflare Worker that lets the phone app ask UPCitemdb's free lookup about unknown barcodes.
+// Cloudflare Worker that lets the iOS app ask UPCitemdb's free lookup about unknown barcodes.
 // UPCitemdb only answers requests from its own website, so the phone can't call it directly.
-// Set ALLOWED_ORIGINS in wrangler.toml to your app's address. Deploy steps are in worker/README.md.
+// The iOS app sends no Origin header, so it's always allowed. Browsers always send one: websites are
+// blocked unless listed in ALLOWED_ORIGINS (wrangler.toml), which keeps other sites from using up the
+// daily lookup limit. Deploy steps are in worker/README.md.
 
 export default {
   async fetch(request, env) {
-    const allowed = (env.ALLOWED_ORIGINS || '*').split(',').map((s) => s.trim());
+    // Empty or unset means no websites; "*" means any.
+    const allowed = (env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     const origin = request.headers.get('Origin');
     const allowOrigin = allowed.includes('*') ? '*' : allowed.includes(origin) ? origin : null;
     const cors = allowOrigin

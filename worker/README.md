@@ -20,5 +20,6 @@ npm run deploy:worker
 The first run opens a browser to log in to Cloudflare. It prints the worker's address, like
 `https://tackletracker-upc-relay.<your-subdomain>.workers.dev`.
 
-`ALLOWED_ORIGINS` in [`wrangler.toml`](wrangler.toml) only limits which websites may call the relay from a browser.
-The iOS app doesn't send a website origin, so it's always allowed.
+The iOS app isn't a website, so it's always allowed. Websites are blocked, so other sites can't use up the daily
+lookup limit. To let a website use the relay, list its address in `ALLOWED_ORIGINS` in [`wrangler.toml`](wrangler.toml)
+and deploy again.
