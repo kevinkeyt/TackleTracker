@@ -17,7 +17,7 @@ You need a Mac with Xcode (26 or later) and an iPhone on iOS 18 or later.
 
 1. Open `ios/TackleTracker.xcodeproj` in Xcode.
 2. Select the **TackleTracker** target → **Signing & Capabilities**, and pick your Apple ID under **Team**. If Xcode
-   says the bundle identifier is taken, change `com.tackletracker.app` to something of your own, such as `com.yourname.tackletracker`.
+   says the bundle identifier is taken, change `com.kevinkeyt.tackletracker` to something of your own, such as `com.yourname.tackletracker`.
 3. Plug in your iPhone (or pair it over Wi-Fi), choose it as the run destination, and press **Run** (⌘R).
 4. The first time, on the iPhone go to **Settings → General → VPN & Device Management**, and trust your developer certificate.
 
