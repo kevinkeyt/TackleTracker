@@ -122,7 +122,7 @@ struct MoreView: View {
         } header: {
             Text("Barcode Lookup")
         } footer: {
-            Text("Fills in the name of packages you haven't added yet, through a small relay (see worker/README.md). Clear the address to turn it off; scanning still finds everything you own.")
+            Text("Fills in the name of packages you haven't added yet, through a small online lookup service. Clear the address to turn it off; scanning still finds everything you own.")
         }
     }
 
